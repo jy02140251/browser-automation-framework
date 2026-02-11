@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  automation:
+    build: .
+    environment:
+      - HEADLESS=true
+      - PROXY_ENABLED=false
+      - SCREENSHOT_DIR=/app/screenshots
+      - LOG_LEVEL=INFO
+    volumes:
+      - screenshots:/app/screenshots
+      - ./examples:/app/examples:ro
+    networks:
+      - automation-net
+
+  selenium-hub:
+    image: selenium/hub:4.15
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    networks:
+      - automation-net
+
+  chrome-node:
+    image: selenium/node-chrome:4.15
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+    shm_size: "2gb"
+    networks:
+      - automation-net
+
+  firefox-node:
+    image: selenium/node-firefox:4.15
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+    shm_size: "2gb"
+    networks:
+      - automation-net
+
+volumes:
+  screenshots:
+
+networks:
+  automation-net:
+    driver: bridge
